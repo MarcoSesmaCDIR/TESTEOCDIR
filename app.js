@@ -50,7 +50,7 @@ function renderDashboard(){
  $('dashTeamList').innerHTML=S.teams.length?S.teams.map(t=>{const count=S.players.filter(p=>p.teamId===t.id).length,tests=S.tests.filter(x=>getPlayer(x.playerId)?.teamId===t.id).length;return `<div class="teamitem"><div><div class="teamname">${esc(t.name)}</div><div class="teammeta">${esc(t.category||'Sin categoría')} · ${tests} test</div></div><span class="count">${count} jugadores</span></div>`}).join(''):blank('Todavía no hay equipos','Añade tu primer equipo para comenzar.');
  let recent=sortLatest(S.tests).slice(0,6);$('dashRecent').innerHTML=recent.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha</th><th>Jugador</th><th>Tipo</th><th>Altura</th></tr></thead><tbody>${recent.map(t=>`<tr><td>${dateLabel(t.date)}</td><td>${esc(getPlayer(t.playerId)?.name||'Jugador eliminado')}</td><td>${kindBadge(t.type)}</td><td class="strong mono">${num(t.height)} cm</td></tr>`).join('')}</tbody></table></div>`:blank('Sin mediciones','Los últimos resultados aparecerán aquí.')}
 function renderPlayers(){const teamSelect=$('filterPlayerTeam');optionsFor(teamSelect,S.teams,teamSelect.value||'all','Todos los equipos');const search=$('searchPlayers').value.trim().toLocaleLowerCase('es');const group=teamSelect.value;const players=S.players.filter(p=>(group==='all'||p.teamId===group)&&((p.name+' '+(p.number||'')).toLocaleLowerCase('es').includes(search)));
- $('playersList').innerHTML=players.length?players.map(p=>{const tests=getTests(p.id),cmj=tests.filter(t=>t.type==='CMJ').at(-1),abk=tests.filter(t=>t.type==='Abalakov').at(-1);return `<button class="player-card" data-profile="${esc(p.id)}"><div class="person-head"><span class="avatar">${esc((p.name.trim()[0]||'?').toUpperCase())}</span><div style="min-width:0"><b>${esc(p.name)}</b><span class="teamtext">${esc(getTeam(p.teamId)?.name||'Sin equipo')}${p.number?' · #'+esc(p.number):''}</span></div></div><div class="person-stats"><span>Último CMJ<strong>${cmj?num(cmj.height)+' cm':'—'}</strong></span><span>Abalakov<strong>${abk?num(abk.height)+' cm':'—'}</strong></span><span>${tests.length} test</span></div></button>`}).join(''):blank('No hay jugadores para mostrar','Crea un jugador o modifica los filtros.');
+ $('playersList').innerHTML=players.length?players.map(p=>{const tests=getTests(p.id),cmj=tests.filter(t=>t.type==='CMJ').at(-1),abk=tests.filter(t=>t.type==='Abalakov').at(-1);return `<button class="player-card" data-profile="${esc(p.id)}"><div class="person-head"><span class="avatar">${esc((p.name.trim()[0]||'?').toUpperCase())}</span><div style="min-width:0"><b>${esc(p.name)}</b><span class="teamtext">${esc(getTeam(p.teamId)?.name||'Sin equipo')}${p.number?' · #'+esc(p.number):''}</span></div></div><div class="person-stats"><span>Último CMJ<strong>${cmj?num(cmj.height)+' cm':'—'}</strong></span><span>Abalakov<strong>${abk?num(abk.height)+' cm':'—'}</strong></span><span>${tests.length} test</span></div><div class="tiny muted" style="margin-top:10px">${p.heightCm!=null?num(p.heightCm)+' cm':'Altura —'} · ${p.weightKg!=null?num(p.weightKg)+' kg':'Peso —'}</div></button>`}).join(''):blank('No hay jugadores para mostrar','Crea un jugador o modifica los filtros.');
  document.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>openProfile(b.dataset.profile)))}
 function openProfile(id){if(!getPlayer(id))return;S.profileId=id;page('profile')}
 function progressPair(tests,type){
@@ -72,7 +72,28 @@ function weeklyChange(test,playerId,type,date){
 function renderProfile(){let p=getPlayer(S.profileId);if(!p){page('players');return}const tests=getTests(p.id),cmj=progressPair(tests,'CMJ'),abk=progressPair(tests,'Abalakov'),best=[...tests].sort((a,b)=>b.height-a.height)[0];$('profileName').textContent=p.name;$('profileTeam').textContent=getTeam(p.teamId)?.name||'Sin equipo';$('profileDetails').textContent=[p.number?'Dorsal '+p.number:null,p.position||null,p.birth?'Nacimiento: '+dateLabel(p.birth):null].filter(Boolean).join(' · ')||'Ficha de jugador';
  for(const [type,data,label,delta] of [['CMJ',cmj,'profileCMJ','profileCMJDelta'],['ABK',abk,'profileABK','profileABKDelta']]){$(label).textContent=data.last?num(data.last.height)+' cm':'—';$(delta).textContent=data.last?(data.previous?`${changeLabel(data.delta)} cm (${changeLabel(data.pct)} %) vs ${dateLabel(data.previous.date)} · Desde inicio: ${changeLabel(data.last.height-data.first.height)} cm`:`Primera prueba · ${dateLabel(data.last.date)}`):'Sin registros'}
  $('profileBest').textContent=best?num(best.height)+' cm':'—';$('profileBestType').textContent=best?`${best.type} · ${dateLabel(best.date)}`:'—';$('profileCount').textContent=tests.length;
- drawChart(tests,$('chartType').value);$('profileHistory').innerHTML=renderTestsTable(sortLatest(tests),true);attachTestEvents($('profileHistory'))}
+ renderBaseline(p,cmj,abk);drawChart(tests,$('chartType').value);$('profileHistory').innerHTML=renderTestsTable(sortLatest(tests),true);attachTestEvents($('profileHistory'))}
+
+const showMetric=(value,suffix='',decimals=1)=>value==null||value===''?'—':`${num(value,decimals)}${suffix?' '+suffix:''}`;
+function renderBaseline(p,cmj,abk){
+ const b=p.evaluationBaseline, el=$('profileBaseline');
+ const current=$('profilePhysicalCurrent');
+ current.innerHTML=`<div class="physical-grid">${[['Estatura',p.heightCm,'cm'],['Peso',p.weightKg,'kg'],['Envergadura',p.wingspanCm,'cm'],['Edad en pretemporada',p.ageAtBaseline,'años']].map(([label,value,unit])=>`<div class="physical-item"><span>${esc(label)}</span><b>${showMetric(value,unit,label==='Edad en pretemporada'?0:1)}</b></div>`).join('')}</div>`;
+ if(!b){el.innerHTML='<p class="small muted">No hay una evaluación de pretemporada importada para este jugador.</p>';$('physicalHistory').innerHTML='<p class="small muted">No hay registros históricos.</p>';return}
+ const t=b.tests||{};
+ const val=(v,unit,decimals=1)=>typeof v==='string'?(v||'—'):showMetric(v,unit,decimals);
+ const groups=[
+ ['Saltos', [['CMJ',t.cmjCm,'cm'],['Abalakov',t.abalakovCm,'cm'],['Single hop izquierdo',t.singleHopLeftCm,'cm'],['Single hop derecho',t.singleHopRightCm,'cm']]],
+ ['Fuerza', [['Hand grip izquierdo',t.handGripLeft,''],['Hand grip derecho',t.handGripRight,''],['ISO belt squat',t.isoBeltSquat,''],['VBT sentadilla · velocidad',t.vbtSquatSpeed,''],['VBT sentadilla · carga',t.vbtSquatLoadKg,'kg']]],
+ ['Carrera', [['1 vuelta al Nieto',t.routeTimeSeconds==null?null:`${Math.floor(t.routeTimeSeconds/60)}:${String(t.routeTimeSeconds%60).padStart(2,'0')}`,'']]]
+ ];
+ const baselineDelta=(data,ref)=>data.last&&ref>0?` <span class="${data.last.height>=ref?'change-up':'change-down'}">(${changeLabel((data.last.height-ref)/ref*100)} % respecto a pretemporada)</span>`:'';
+ const chg=`<p class="helper">Referencia de salto: CMJ ${val(t.cmjCm,'cm')} ${baselineDelta(cmj,t.cmjCm)} · Abalakov ${val(t.abalakovCm,'cm')} ${baselineDelta(abk,t.abalakovCm)}</p>`;
+ el.innerHTML=`<div class="helper" style="margin-bottom:13px">${esc(b.period||'Pretemporada')} · Fecha exacta no consignada · Página ${esc(b.sourcePage??'—')} del PDF original</div><div class="baseline-grid">${groups.map(([heading,rows])=>`<div><h3 style="margin:0 0 7px">${heading}</h3><div class="table-wrap"><table class="data-table"><tbody>${rows.map(([label,value,unit])=>`<tr><td>${esc(label)}</td><td class="strong mono">${esc(val(value,unit))}</td></tr>`).join('')}</tbody></table></div></div>`).join('')}</div>${chg}<p class="tiny muted">«—» indica que el dato no figura o aparece sin confirmar. No se genera una fecha artificial ni se añaden estos valores al gráfico semanal. Los resultados Grip e ISO conservan las unidades tal como aparecen en la fuente (sin unidad explícita). ${esc(b.notes||'')}</p>`;
+ const history=[...(p.physicalHistory||[])];
+ $('physicalHistory').innerHTML=history.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Fecha / periodo</th><th>Altura</th><th>Peso</th><th>Envergadura</th></tr></thead><tbody>${history.map(x=>`<tr><td>${esc(x.date?dateLabel(x.date):x.period||'Sin fecha')}</td><td>${val(x.heightCm,'cm')}</td><td>${val(x.weightKg,'kg')}</td><td>${val(x.wingspanCm,'cm')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted">No hay registros antropométricos.</p>';
+}
+
 function drawChart(all,type){const holder=$('jumpChart');const tests=all.filter(t=>type==='all'||t.type===type),w=900,h=315,left=53,right=22,top=23,bottom=54;
  if(!tests.length){holder.innerHTML=blank('No hay datos para la gráfica','Guarda una medición para comenzar a visualizar la evolución.');return}
  let values=tests.map(t=>t.height),mi=Math.max(0,Math.floor((Math.min(...values)-5)/5)*5),ma=Math.ceil((Math.max(...values)+5)/5)*5;if(ma-mi<10)ma=mi+10;
@@ -92,8 +113,24 @@ function updateHistPlayers(){let team=$('histTeam').value,players=S.players.filt
 // Team and athlete management
 function newTeam(id=null){const t=id?getTeam(id):null;$('teamId').value=t?.id||'';$('teamName').value=t?.name||'';$('teamCategory').value=t?.category||'';$('teamDialogTitle').textContent=t?'Editar equipo':'Nuevo equipo';closeModal('teamsManager');openModal('teamDialog')}
 async function saveTeam(e){e.preventDefault();let id=$('teamId').value||uid(),name=$('teamName').value.trim(),category=$('teamCategory').value.trim();if(!name)return; if(S.teams.some(t=>t.id!==id&&t.name.toLowerCase()===name.toLowerCase())){notify('Ya existe un equipo con ese nombre.',true);return}try{await commit([['put','teams',{id,name,category}]]);await reload();closeModal('teamDialog');render();notify('Equipo guardado.')}catch(err){notify('No se pudo guardar el equipo: '+err.message,true)}}
-function newPlayer(id=null){if(!S.teams.length){notify('Primero crea un equipo.',true);newTeam();return}const p=id?getPlayer(id):null;$('playerId').value=p?.id||'';$('playerName').value=p?.name||'';$('playerNumber').value=p?.number||'';$('playerBirth').value=p?.birth||'';$('playerPosition').value=p?.position||'';optionsFor($('playerTeam'),S.teams,p?.teamId||S.teams[0]?.id,null,null);$('playerDialogTitle').textContent=p?'Editar jugador':'Nuevo jugador';openModal('playerDialog')}
-async function savePlayer(e){e.preventDefault();const p={id:$('playerId').value||uid(),name:$('playerName').value.trim(),number:$('playerNumber').value.trim(),birth:$('playerBirth').value,position:$('playerPosition').value.trim(),teamId:$('playerTeam').value};if(!p.name||!getTeam(p.teamId)){notify('Selecciona un nombre y un equipo.',true);return}try{await commit([['put','players',p]]);await reload();closeModal('playerDialog');render();notify('Jugador guardado.')}catch(err){notify('No se pudo guardar: '+err.message,true)}}
+function newPlayer(id=null){if(!S.teams.length){notify('Primero crea un equipo.',true);newTeam();return}const p=id?getPlayer(id):null;$('playerId').value=p?.id||'';$('playerName').value=p?.name||'';$('playerNumber').value=p?.number||'';$('playerBirth').value=p?.birth||'';$('playerPosition').value=p?.position||'';$('playerAgeBaseline').value=p?.ageAtBaseline??'';$('playerWeight').value=p?.weightKg??'';$('playerHeight').value=p?.heightCm??'';$('playerWingspan').value=p?.wingspanCm??'';$('playerPhysicalDate').value=isoToday();optionsFor($('playerTeam'),S.teams,p?.teamId||S.teams[0]?.id,null,null);$('playerDialogTitle').textContent=p?'Editar jugador':'Nuevo jugador';openModal('playerDialog')}
+async function savePlayer(e){
+ e.preventDefault();
+ const id=$('playerId').value||uid(),existing=getPlayer(id),date=$('playerPhysicalDate').value;
+ const parsed=id=>$(id).value.trim()===''?null:Number($(id).value);
+ const phys={weightKg:parsed('playerWeight'),heightCm:parsed('playerHeight'),wingspanCm:parsed('playerWingspan')};
+ const p={...(existing||{}),id,name:$('playerName').value.trim(),number:$('playerNumber').value.trim(),birth:$('playerBirth').value,position:$('playerPosition').value.trim(),teamId:$('playerTeam').value,ageAtBaseline:parsed('playerAgeBaseline'),...phys};
+ if(!p.name||!getTeam(p.teamId)){notify('Selecciona un nombre y un equipo.',true);return}
+ if(Object.values(phys).some(x=>x!==null&&(!Number.isFinite(x)||x<0||x>350))){notify('Revisa altura, peso y envergadura.',true);return}
+ if(p.ageAtBaseline!==null&&(!Number.isInteger(p.ageAtBaseline)||p.ageAtBaseline<0||p.ageAtBaseline>100)){notify('Revisa la edad de pretemporada.',true);return}
+ const physicalChanged=['weightKg','heightCm','wingspanCm'].some(k=>phys[k]!==null&&phys[k]!==existing?.[k]);
+ p.physicalHistory=[...(existing?.physicalHistory||[])];
+ if(physicalChanged){
+  if(!date){notify('Selecciona la fecha para la nueva medición física.',true);return}
+  p.physicalHistory.push({id:uid(),date,period:'Medición manual',...phys});
+ }
+ try{await commit([['put','players',p]]);await reload();closeModal('playerDialog');render();notify('Jugador guardado.')}catch(err){notify('No se pudo guardar: '+err.message,true)}
+}
 function renderTeamManager(){$('managerTeamList').innerHTML=S.teams.length?S.teams.map(t=>`<div class="teamitem"><div><strong>${esc(t.name)}</strong><div class="small muted">${esc(t.category)}</div></div><div style="display:flex;gap:6px"><button class="btn smallbtn" data-editteam="${esc(t.id)}">Editar</button><button class="btn danger smallbtn" data-delteam="${esc(t.id)}">×</button></div></div>`).join(''):blank('Sin equipos','Crea un equipo para empezar.');$('managerTeamList').querySelectorAll('[data-editteam]').forEach(b=>b.addEventListener('click',()=>newTeam(b.dataset.editteam)));$('managerTeamList').querySelectorAll('[data-delteam]').forEach(b=>b.addEventListener('click',()=>deleteTeam(b.dataset.delteam)))}
 async function deleteTeam(id){const t=getTeam(id);if(!t)return;let pids=S.players.filter(p=>p.teamId===id).map(p=>p.id),tests=S.tests.filter(x=>pids.includes(x.playerId));if(!confirm(`¿Eliminar «${t.name}», ${pids.length} jugadores y ${tests.length} test? Esta acción no se puede deshacer.`))return;
  const removed=new Set(tests.map(x=>x.id)),videoIds=new Set(tests.map(x=>x.videoId).filter(Boolean)),keepVideoIds=new Set(S.tests.filter(x=>!removed.has(x.id)).map(x=>x.videoId));let ops=[['delete','teams',id],...pids.map(id=>['delete','players',id]),...tests.map(x=>['delete','tests',x.id]),...S.sessions.filter(x=>x.teamId===id).map(x=>['delete','sessions',x.id]),...S.attendance.filter(x=>pids.includes(x.playerId)).map(x=>['delete','attendance',x.id]),...[...videoIds].filter(id=>!keepVideoIds.has(id)).map(id=>['delete','videos',id])];try{await commit(ops);await reload();renderTeamManager();render();notify('Equipo eliminado.')}catch(e){notify(e.message,true)}}
@@ -163,7 +200,7 @@ document.addEventListener('keydown',e=>{const inField=['INPUT','SELECT','TEXTARE
 for(const id of ['exportCsvBtn','exportCsvHistory'])$(id).addEventListener('click',exportCsv);
 $('backupBtn').addEventListener('click',async()=>{let videoIds=[...new Set(S.tests.map(t=>t.videoId).filter(Boolean))],size=0;for(const id of videoIds){let v=await dbRead('videos',id);size+=v?.blob?.size||0}$('backupSize').textContent=`${videoIds.length} vídeos asociados · ${num(size/1048576,1)} MB aprox. La copia completa puede ser grande.`;openModal('backupDialog')});$('confirmBackup').addEventListener('click',backup);$('restoreBtn').addEventListener('click',()=>$('restoreInput').click());$('restoreInput').addEventListener('change',e=>restoreBackup(e.target.files?.[0]));
 // TesteoCDIR 2.0: sesiones, plantilla de equipo, sincronizacion Drive y actualización PWA.
-const RELEASE='2.1.0';
+const RELEASE='2.2.0';
 const cloud={token:'',email:'',name:'',folderId:null,dataFileId:null,busy:false,timer:null,last:null};
 let activeSessionId=null, installPrompt=null,swRegistration=null;
 const cadeteRoster=[]; // Los datos del club se importan privadamente.
@@ -217,11 +254,39 @@ function renderWeekly(){
  }));
 }
 // Importación de plantilla privada: mantener este fichero fuera del repositorio web público.
+
+// Actualización privada de datos CMA: nunca se empaqueta con la PWA ni se envía a GitHub Pages.
+async function importCmaEvaluation(data){
+ if(data.app!=='TesteoCDIR-CMA-evaluacion'||!Array.isArray(data.players)||data.players.length!==16)throw Error('Formato o número de jugadores de la evaluación incorrecto');
+ const wanted=data.team||{id:'cdir-cadete-masculino-a-2026',name:'Cadete Masculino A',category:'2026/27'};
+ const team=S.teams.find(x=>x.id===wanted.id)||S.teams.find(x=>x.name.toLocaleLowerCase('es')===wanted.name.toLocaleLowerCase('es'));
+ const teamId=team?.id||wanted.id,ops=[];
+ if(!team)ops.push(['put','teams',{...wanted,id:teamId}]);
+ const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es').trim();
+ let created=0,updated=0;
+ for(const r of data.players){
+  if(!r.id||!r.name||!r.evaluationBaseline||r.teamId!==wanted.id)throw Error('Ficha inválida: '+(r.name||'sin nombre'));
+  const old=S.players.find(x=>x.id===r.id)||S.players.find(x=>x.teamId===teamId&&r.number&&x.number===r.number)||S.players.find(x=>x.teamId===teamId&&[r.name,r.originalShortName].some(n=>norm(n)===norm(x.name)));
+  const useId=old?.id||r.id;
+  const wasShort=old&&norm(old.name)===norm(r.originalShortName);
+  const next={...(old||{}),id:useId,teamId,number:old?.number||r.number||'',name:(!old||wasShort)?r.name:old.name,
+   birth:old?.birth||'',position:old?.position||'',ageAtBaseline:old?.ageAtBaseline??r.ageAtBaseline,
+   heightCm:old?.heightCm??r.heightCm,weightKg:old?.weightKg??r.weightKg,wingspanCm:old?.wingspanCm??r.wingspanCm,
+   evaluationBaseline:r.evaluationBaseline};
+  const history=(old?.physicalHistory||[]).filter(x=>x.id!=='cma-pre-2026-27');
+  next.physicalHistory=[...(r.physicalHistory||[]),...history];
+  ops.push(['put','players',next]);
+  if(old)updated++;else created++;
+ }
+ await commit(ops);await reload();render();notify(`Datos de pretemporada importados: ${updated} actualizados · ${created} nuevos. Se han conservado los test y vídeos existentes.`);
+}
+
 $('importRosterBtn').addEventListener('click',()=>$('rosterFile').click());
 $('rosterFile').addEventListener('change',async e=>{
  const file=e.target.files?.[0];e.target.value='';if(!file)return;
  try{
   const data=JSON.parse(await file.text());
+  if(data.app==='TesteoCDIR-CMA-evaluacion'){await importCmaEvaluation(data);return}
   if(data.app!=='TesteoCDIR-plantilla'||!Array.isArray(data.teams)||!Array.isArray(data.players))throw Error('Archivo de plantilla no válido');
   const teams=new Map(S.teams.map(x=>[x.id,x])),players=new Map(S.players.map(x=>[x.id,x]));
   const ops=[];
