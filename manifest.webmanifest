@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "TesteoCDIR · CDI ROZASBASKET",
+  "short_name": "TesteoCDIR",
+  "description": "Testeo semanal de salto CMJ, SJ y Abalakov, con jugadores, vídeos e historial.",
+  "lang": "es-ES",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "background_color": "#091433",
+  "theme_color": "#101e46",
+  "icons": [
+    {"src":"./assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
