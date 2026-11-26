@@ -1,0 +1,24 @@
+TESTEOCDIR 3.0.1 — actualización sobre 2.3.0
+
+ANTES DE INSTALAR
+1. En la aplicación 2.3, exporta una copia de seguridad completa con vídeos, desde Sincronización e instalación.
+2. Guarda el ZIP de la versión 2.3 que descargaste de GitHub como respaldo del código.
+3. Descomprime este ZIP. En el mismo repositorio y rama donde está la versión actual, sube los archivos index.html, app.js, jump-ai.js, sw.js, manifest.webmanifest y la carpeta assets/ a la raíz. No subas una carpeta envolvente ni borres la carpeta 2.1. No se incluye config.js en esta actualización: conserva el archivo que ya existe en GitHub.
+4. Confirma los cambios (Commit changes). Abre la dirección habitual, ve a Sincronización e instalación y comprueba la versión. Si aparece Actualizar app, pulsa ese botón. No borres datos del navegador ni desinstales la PWA.
+
+ANÁLISIS
+- El archivo se analiza localmente. La primera carga del modelo necesita internet (MediaPipe Tasks Vision 0.10.21 por jsDelivr y el modelo Pose Landmarker Lite por Google Storage).
+- Selecciona jugador, prueba y vídeo. Comprueba los FPS medios detectados; son de la pista de vídeo, no necesariamente los FPS de captura o de la reproducción exportada. En vídeos variables o editados, el avance por frame es aproximado.
+- Confirma la velocidad temporal REAL del tramo importado: 100 % si el tiempo de archivo coincide con el tiempo real; 25 % si ese tramo dura cuatro veces más que el evento real, etc. La velocidad de reproducción de la app (x1, x0.5...) no cambia el resultado. Si el vídeo tiene velocidad variable dentro del vuelo o no sabes el factor, no registres esa medición.
+- Selecciona un intervalo con un salto y apoyos visibles antes y después; mejor cámara lateral fija, un único jugador en cuadro y pies visibles. Usa los campos Inicio y Fin, o los botones para tomar la posición actual del vídeo.
+- Pulsa Analizar automáticamente. El sistema estima los puntos de despegue y aterrizaje mediante la posición de los pies. Si no ve un único vuelo con apoyos claros, no propone resultado. Revisa los dos fotogramas con Ir y corrige manualmente cuando proceda. Pulsa Revisar y guardar medición. Aparecerá una confirmación con jugador, tipo, altura, tiempo de vuelo, marcas y ralentización. Solo Aceptar guarda la medición; Cancelar no guarda nada. También se exige confirmación en las mediciones manuales y al actualizar resultados anteriores. La detección es experimental: no utilizar sin revisión ni validación con vídeo real.
+- Para corregir un salto antiguo, abre Historial > Ver, modifica la velocidad temporal y comprueba los apoyos. Pulsa Revisar y actualizar medición y confirma. El valor anterior inmediato se mantiene como referencia en el registro. No se recalculan todos los saltos sin supervisión.
+
+COMPROBACIONES Y LÍMITES
+- Se mantiene el nombre y versión de IndexedDB, las tiendas, las funciones de sincronización y los campos existentes. Se añaden tiempos y factor temporal. No se ha ensayado la migración con datos privados ni la conexión real a Drive.
+- Comprobados sintaxis JS, IDs HTML, lectura de un MP4 sintético de 50 FPS y cálculo (2,3 s de vídeo al 25 % = 40,54 cm). Pruebas sintéticas de detector: salto único, sin salto y dos saltos. No son validación científica.
+- El navegador del entorno de desarrollo bloqueó la navegación de prueba. No se ha verificado la interfaz en Safari/iPhone ni el modelo con vídeos de jugadores; no es una versión validada. El análisis usa muestreo por seek (máximo 120 muestras/s) y no decodificación de cada fotograma real. No puede inferir de forma fiable el factor de ralentización de cualquier exportación.
+- La carpeta assets faltaba en la raíz del ZIP original; se han copiado los iconos/logos presentes en la carpeta 2.1.
+
+ACTUALIZACIONES
+Una vez publicada esta versión en el mismo repositorio y URL, la PWA puede recibir versiones futuras publicadas por GitHub Pages sin volver a instalarla. No se generan ni publican mejoras automáticamente. El análisis visual sigue siendo experimental y requiere validar los resultados con vídeos reales.
