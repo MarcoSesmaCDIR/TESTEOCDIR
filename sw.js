@@ -1,8 +1,8 @@
 /* Se incrementa APP_VERSION con cada nueva versión publicada. */
-const APP_VERSION = 'testeo-cdir-v3.0.1';
+const APP_VERSION = 'testeo-cdir-v3.1.0';
 const STATIC_FILES = ['./','./index.html','./app.js','./jump-ai.js','./config.js','./manifest.webmanifest','./assets/logo-original.png','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(APP_VERSION).then(cache=>cache.addAll(STATIC_FILES)));
+  event.waitUntil(caches.open(APP_VERSION).then(cache=>cache.addAll(STATIC_FILES.map(path=>new Request(path,{cache:"reload"})))));
 });
 self.addEventListener('activate',event=>{
   event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('testeo-cdir-')&&k!==APP_VERSION).map(k=>caches.delete(k)))),self.clients.claim()]));

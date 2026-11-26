@@ -1,0 +1,23 @@
+TESTEOCDIR 3.1.0 — detección automática con confirmación
+
+INSTALACIÓN (NO BORRAR DATOS)
+1. Exporta una copia de seguridad de la app actual.
+2. Extrae el ZIP y sube los archivos y assets a la RAÍZ del mismo repositorio de GitHub, sustituyendo los anteriores.
+3. No elimines config.js: no está incluido en este paquete para preservar la configuración de Google Drive. Conserva el archivo que ya tienes.
+4. Haz Commit changes. Abre la misma URL en PC/iPhone, usa Actualizar app si aparece y verifica que se lee 3.1.0. No desinstales ni borres el almacenamiento.
+
+USO
+- Importa un vídeo corto (hasta 30 s), con un salto, apoyo antes y después y cámara fija. La opción Analizar al importar está marcada por defecto. También puedes pulsar Analizar automáticamente.
+- El motor de pose propone las dos marcas sin necesitar conocer la ralentización. El modelo se ejecuta en el dispositivo; descargarlo requiere internet. Si el vídeo es largo, indica un inicio y un fin (hasta 30 s) que contengan un salto.
+- Confirma la velocidad temporal del archivo importado. Para un vídeo ralentizado de forma uniforme al 25 % pulsa Confirmar 25 %. Si sabes que todos los próximos archivos se exportarán exactamente igual, puedes activar Recordar. La velocidad de la app no afecta al cálculo. El selector distingue la reproducción del vídeo y el tiempo físico. Los FPS del contenedor no bastan para deducir el tiempo real, especialmente en vídeos editados o con cambios de velocidad. No uses un porcentaje si no sabes si el archivo lo conserva. Una velocidad que cambia durante el vuelo invalida el cálculo de factor único.
+- Revisa el primer instante con los dos pies en el aire (Take-off) y el primer contacto posterior (Landing). Usa Ir y los controles de avance para corregirlos si hace falta. Los tiempos y fotogramas son aproximaciones dependientes del navegador; no se garantiza precisión al fotograma real.
+- Pulsa Revisar y guardar medición. La app pide una confirmación explícita con altura, tiempo, marcas y factor temporal. Cancelar no escribe ningún dato. No se guarda nada de forma automática.
+
+ALTERNATIVA SI EL MODELO NO CARGA O NO VE BIEN LOS PIES
+- En el apartado 03, abre Alternativa local si la pose no se detecta.
+- Sitúate antes del salto, con los dos pies apoyados, quietos y visibles. Pulsa Marcar pies en apoyo y toca una zona con contraste en el borde de cada zapatilla. Pulsa Seguir pies y detectar salto. Este modo no requiere descargar el modelo de visión y propone ambas marcas mediante seguimiento de patrones visuales. Puede fallar con cámara en movimiento, cambios de orientación de los pies, sombras, poca luz, oclusión o desplazamiento horizontal importante. Revisa siempre las marcas. También sigue disponible el modo manual.
+
+VALIDACIÓN Y LIMITACIONES
+- Sintaxis JS comprobada. Pruebas del algoritmo de vuelo con trayectorias sintéticas (incluidas breves pérdidas de detección y ausencia de vuelo). Prueba del seguimiento local sobre fotogramas decodificados de un vídeo sintético mediante simulación de la interfaz de vídeo. Ocho pruebas unitarias de confirmación/cancelación de altas y correcciones. Ejemplo de cálculo: 7,567 a 9,867 s, factor .25 -> 575 ms -> 40,54 cm.
+- El navegador del entorno de pruebas bloqueó la navegación local y no se pudo descargar MediaPipe. No se ha validado la interfaz completa, la inferencia real, el iPhone, la sincronización Drive ni la actualización PWA en producción. No es un instrumento validado. Compara los resultados con selección manual en varios saltos y, si procede, con un método de referencia antes de usar para investigación.
+- Se conserva el esquema de almacenamiento y la lógica de sincronización de 3.0.1. No incluye datos de jugadores ni vídeos privados.
